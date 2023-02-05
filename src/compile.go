@@ -1,34 +1,40 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 )
 
-func Compile(asm, file string) error {
-	fasm, err := os.CreateTemp("", "*.asm")
+func Compile(asm string, file string, outputAsm bool) error {
+	var fasm *os.File
+	var err error
+
+	if outputAsm {
+		fasm, err = os.Create(file + ".asm")
+	} else {
+		fasm, err = os.CreateTemp("", "*.asm")
+		defer os.Remove(fasm.Name())
+	}
     if err != nil {
 		return err
     }
 
     defer fasm.Close()
-	defer os.Remove(fasm.Name())
-
-	fo, err := os.CreateTemp("", "*.o")
-    if err != nil {
-		return err
-    }
-
-    defer fo.Close()
-	defer os.Remove(fo.Name())
 
 	_, err = fasm.Write([]byte(asm))
 	if err != nil {
 		return err
 	}
 	fasm.Close()
+
+
+	fo, err := os.CreateTemp("", "*.o")
+    if err != nil {
+		return err
+    }
+    fo.Close()
+	defer os.Remove(fo.Name())
 
 	cmd := exec.Command("nasm", "-f", "elf64", "-o", fo.Name(), fasm.Name())
 	err = executeCommand(cmd)
@@ -59,7 +65,7 @@ func executeCommand(cmd *exec.Cmd) error {
 	output, _ := io.ReadAll(stderr)
 	err = cmd.Wait()
 	if err != nil {
-		fmt.Printf("%s\n", output)
+		os.Stderr.Write(output)
 		return err
 	}
 

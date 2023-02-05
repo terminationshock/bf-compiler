@@ -9,6 +9,8 @@ import (
 type Command struct {
 	Char rune
 	Count int
+	Row int
+	Col int
 }
 
 func Parse(file string) ([]*Command, error) {
@@ -17,15 +19,25 @@ func Parse(file string) ([]*Command, error) {
 		return nil, err
 	}
 
+	row := 1
+	col := 1
 	code := []*Command{}
 	for _, char := range content {
 		r := rune(char)
-		if (strings.ContainsRune("><+-.,[]", r)) {
+		if strings.ContainsRune("><+-.,[]", r) {
 			command := &Command {
 				Char: rune(char),
 				Count: 1,
+				Row: row,
+				Col: col,
 			}
 			code = append(code, command)
+		}
+		if char == '\n' {
+			row++
+			col = 1
+		} else {
+			col++
 		}
 	}
 
