@@ -9,14 +9,21 @@ var (
 	template = `global main
 extern putchar
 extern getchar
+extern MPI_Init
+extern MPI_Finalize
 section .text
 main:
   push rbp
   mov rbp, rsp
   xor rax, rax
   push rax
+  sub rsp, 8
   mov r12, rsp
+  xor rdi, rdi
+  xor rsi, rsi
+  call MPI_Init
   %s%smov rsp, rbp
+  call MPI_Finalize
   pop rbp
   xor rax, rax
   ret`

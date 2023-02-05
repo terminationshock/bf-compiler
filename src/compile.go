@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 )
 
-func Compile(asm string, file string, outputAsm bool) error {
+func Compile(asm string, file string, mpiPath string, outputAsm bool, verbose bool) error {
 	var fasm *os.File
 	var err error
 
@@ -37,12 +38,18 @@ func Compile(asm string, file string, outputAsm bool) error {
 	defer os.Remove(fo.Name())
 
 	cmd := exec.Command("nasm", "-f", "elf64", "-o", fo.Name(), fasm.Name())
+	if verbose {
+		fmt.Println(cmd.String())
+	}
 	err = executeCommand(cmd)
 	if err != nil {
 		return err
 	}
 
-	cmd = exec.Command("gcc", "-o", file, fo.Name())
+	cmd = exec.Command("gcc", "-o", file, "-L", mpiPath, "-lmpi", "-Wl,-rpath," + mpiPath, fo.Name())
+	if verbose {
+		fmt.Println(cmd.String())
+	}
 	err = executeCommand(cmd)
 	if err != nil {
 		return err
