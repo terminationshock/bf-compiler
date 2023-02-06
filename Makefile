@@ -15,7 +15,7 @@ clean:
 	rm -f *.x
 	rm -f *.asm
 
-SERIAL_TEST_FILES=hello_world add rot13 numwarp primes
+SERIAL_TEST_FILES=hello_world add rot13 numwarp primes pi
 MPI_TEST_FILES=sum
 SERIAL_TESTS=$(patsubst %, test/serial/%, $(SERIAL_TEST_FILES))
 MPI_TESTS=$(patsubst %, test/mpi/%, $(MPI_TEST_FILES))
