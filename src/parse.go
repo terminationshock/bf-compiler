@@ -13,12 +13,13 @@ type Command struct {
 	Col int
 }
 
-func Parse(file string) ([]*Command, error) {
+func Parse(file string) ([]*Command, bool, error) {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
+	hasMpi := false
 	row := 1
 	col := 1
 	code := []*Command{}
@@ -32,6 +33,9 @@ func Parse(file string) ([]*Command, error) {
 				Col: col,
 			}
 			code = append(code, command)
+			if strings.ContainsRune("#$", r) {
+				hasMpi = true
+			}
 		}
 		if char == '\n' {
 			row++
@@ -42,7 +46,7 @@ func Parse(file string) ([]*Command, error) {
 	}
 
 	if len(code) == 0 {
-		return nil, errors.New("Empty program")
+		return nil, false, errors.New("Empty program")
 	}
 
 	cnt := 0
@@ -58,5 +62,5 @@ func Parse(file string) ([]*Command, error) {
 		i++
 	}
 
-	return optimizedCode, nil
+	return optimizedCode, hasMpi, nil
 }

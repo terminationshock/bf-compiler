@@ -18,14 +18,14 @@ var (
 func main() {
 	ctx := kong.Parse(&cli)
 
-	code, err := Parse(cli.File)
+	code, hasMpi, err := Parse(cli.File)
 	ctx.FatalIfErrorf(err)
 
 	asm, err := Assembly(code, cli.File)
 	ctx.FatalIfErrorf(err)
 
-	c := Library()
+	c := Library(hasMpi)
 
-	err = Compile(asm, c, cli.Output, cli.Include, cli.Lib, cli.Assembly, cli.Verbose)
+	err = Compile(asm, c, cli.Output, cli.Include, cli.Lib, hasMpi, cli.Assembly, cli.Verbose)
 	ctx.FatalIfErrorf(err)
 }

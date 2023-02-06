@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-func Compile(asm, c, file, mpiIncludePath, mpiLibPath string, outputAsm bool, verbose bool) error {
+func Compile(asm, c, file, mpiIncludePath, mpiLibPath string, hasMpi, outputAsm, verbose bool) error {
 	var fasm *os.File
 	var err error
 
@@ -62,7 +62,11 @@ func Compile(asm, c, file, mpiIncludePath, mpiLibPath string, outputAsm bool, ve
 		return err
 	}
 
-	cmd = exec.Command("gcc", "-c", "-o", foC.Name(), "-I", mpiIncludePath, fc.Name())
+	tokens := []string{"-c", "-o", foC.Name(), fc.Name()}
+	if hasMpi {
+		tokens = append(tokens, "-I", mpiIncludePath)
+	}
+	cmd = exec.Command("gcc", tokens...)
 	if verbose {
 		fmt.Println(cmd.String())
 	}
@@ -71,7 +75,11 @@ func Compile(asm, c, file, mpiIncludePath, mpiLibPath string, outputAsm bool, ve
 		return err
 	}
 
-	cmd = exec.Command("gcc", "-o", file, "-L", mpiLibPath, "-lmpi", "-Wl,-rpath," + mpiLibPath, foAsm.Name(), foC.Name())
+	tokens = []string{"-o", file, foAsm.Name(), foC.Name()}
+	if hasMpi {
+		tokens = append(tokens, "-L", mpiLibPath, "-lmpi", "-Wl,-rpath," + mpiLibPath)
+	}
+	cmd = exec.Command("gcc", tokens...)
 	if verbose {
 		fmt.Println(cmd.String())
 	}

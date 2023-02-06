@@ -1,7 +1,7 @@
 package main
 
 var (
-	lib = `#include <mpi.h>
+	mpiLib = `#include <mpi.h>
 void mympi_init() {
   MPI_Init(NULL, NULL);
 }
@@ -16,8 +16,18 @@ void mympi_allreduce(void *data) {
 void mympi_finalize() {
   MPI_Finalize();
 }`
+	dummyLib = `
+void mympi_init() {}
+int mympi_rank() {
+  return 0;
+}
+void mympi_allreduce(void *data) {}
+void mympi_finalize() {}`
 )
 
-func Library() string {
-	return lib
+func Library(hasMpi bool) string {
+	if hasMpi {
+		return mpiLib
+	}
+	return dummyLib
 }
