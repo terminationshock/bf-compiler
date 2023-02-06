@@ -123,9 +123,7 @@ func Assembly(code []*Command, file string) (string, error) {
 			}
 			break
 		case '#':
-			for i := 0; i < c.Count; i++ {
-				program += "mov [r12], r13" + br
-			}
+			program += "mov [r12], r13" + br
 			break
 		case '$':
 			for i := 0; i < c.Count; i++ {

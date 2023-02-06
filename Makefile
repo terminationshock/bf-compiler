@@ -15,7 +15,7 @@ clean:
 	rm -f *.x
 	rm -f *.asm
 
-check: $(exe) hello_world.test add.test rot13.test mpi_sum.test_mpi
+check: $(exe) hello_world.test add.test rot13.test numwarp.test primes.test mpi_sum.test_mpi
 
 %.test: %.x
 	test ! -f test/$*.in || diff -q test/$*.out <(./$*.x < test/$*.in)
