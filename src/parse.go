@@ -24,7 +24,7 @@ func Parse(file string) ([]*Command, error) {
 	code := []*Command{}
 	for _, char := range content {
 		r := rune(char)
-		if strings.ContainsRune("><+-.,[]", r) {
+		if strings.ContainsRune("><+-.,[]#$", r) {
 			command := &Command {
 				Char: rune(char),
 				Count: 1,

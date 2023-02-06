@@ -10,19 +10,35 @@ var (
 extern putchar
 extern getchar
 extern MPI_Init
+extern MPI_Comm_rank
+extern MPI_Allreduce
 extern MPI_Finalize
+extern ompi_mpi_comm_world
+extern ompi_mpi_int
+extern ompi_mpi_op_sum
 section .text
+
 main:
   push rbp
   mov rbp, rsp
-  xor rax, rax
-  push rax
-  sub rsp, 8
+  sub rsp, 16
   mov r12, rsp
   xor rdi, rdi
   xor rsi, rsi
   call MPI_Init
-  %s%smov rsp, rbp
+  mov rdi, ompi_mpi_comm_world
+  lea rsi, [r12]
+  call MPI_Comm_rank
+  mov r13, [r12]
+  xor rax, rax
+  mov [r12], rax
+  mov r14, 10				
+  .loop0:
+  dec r14
+  cmp r14, 0
+  push rax
+  jne .loop0
+  %smov rsp, rbp
   call MPI_Finalize
   pop rbp
   xor rax, rax
@@ -37,12 +53,9 @@ type Loop struct {
 }
 
 func Assembly(code []*Command, file string) (string, error) {
-	stack := 0
-	maxStack := 0
-	loopCounter := 0
+	loopId := 0
 	loops := []*Loop{}
 
-	init := ""
 	program := ""
 
 	for _, c := range code {
@@ -50,17 +63,8 @@ func Assembly(code []*Command, file string) (string, error) {
 		switch c.Char {
 		case '>':
 			program += fmt.Sprintf("sub r12, %d", 8 * c.Count) + br
-			stack += c.Count
-			if stack > maxStack {
-				init += "push rax" + br
-				maxStack = stack
-			}
 			break
 		case '<':
-			stack -= c.Count
-			if stack < 0 {
-				return "", errors.New(fmt.Sprintf("Stack underflow at %s:%d:%d", file, c.Row, c.Col))
-			}
 			program += fmt.Sprintf("add r12, %d", 8 * c.Count) + br
 			break
 		case '+':
@@ -87,16 +91,16 @@ func Assembly(code []*Command, file string) (string, error) {
 			break
 		case '[':
 			for i := 0; i < c.Count; i++ {
-				loopCounter++
+				loopId++
 				loops = append(loops, &Loop {
-					Number: loopCounter,
+					Number: loopId,
 					Row: c.Row,
 					Col: c.Col,
 				})
 				program += "mov rax, [r12]" + br
 				program += "cmp rax, 0" + br
-				program += "je " + fmt.Sprintf(".break%d", loopCounter) + br
-				program += fmt.Sprintf(".loop%d:", loopCounter) + br
+				program += "je " + fmt.Sprintf(".break%d", loopId) + br
+				program += fmt.Sprintf(".loop%d:", loopId) + br
 			}
 			break
 		case ']':
@@ -113,6 +117,22 @@ func Assembly(code []*Command, file string) (string, error) {
 				program += fmt.Sprintf(".break%d:", loop) + br
 			}
 			break
+		case '#':
+			for i := 0; i < c.Count; i++ {
+				program += "mov [r12], r13" + br
+			}
+			break
+		case '$':
+			for i := 0; i < c.Count; i++ {
+				program += "mov rdi, 1" + br
+		    	program += "lea rsi, [r12]" + br
+		    	program += "mov rdx, 1" + br
+				program += "mov rcx, ompi_mpi_int" + br
+				program += "mov r8, ompi_mpi_op_sum" + br
+				program += "mov r9, ompi_mpi_comm_world" + br
+				program += "call MPI_Allreduce" + br
+			}
+			break
 		}
 	}
 
@@ -121,5 +141,5 @@ func Assembly(code []*Command, file string) (string, error) {
 		return "", errors.New(fmt.Sprintf("No matching loop end at %s:%d:%d", file, loops[n].Row, loops[n].Col))
 	}
 
-	return fmt.Sprintf(template, init, program), nil
+	return fmt.Sprintf(template, program), nil
 }
