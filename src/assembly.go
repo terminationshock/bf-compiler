@@ -9,13 +9,10 @@ var (
 	template = `global main
 extern putchar
 extern getchar
-extern MPI_Init
-extern MPI_Comm_rank
-extern MPI_Allreduce
-extern MPI_Finalize
-extern ompi_mpi_comm_world
-extern ompi_mpi_int
-extern ompi_mpi_op_sum
+extern mympi_init
+extern mympi_rank
+extern mympi_allreduce
+extern mympi_finalize
 section .text
 
 main:
@@ -23,16 +20,12 @@ main:
   mov rbp, rsp
   sub rsp, 16
   mov r12, rsp
-  xor rdi, rdi
-  xor rsi, rsi
-  call MPI_Init
-  mov rdi, ompi_mpi_comm_world
-  lea rsi, [r12]
-  call MPI_Comm_rank
-  mov r13, [r12]
+  call mympi_init
+  call mympi_rank
+  mov r13, rax
   xor rax, rax
   mov [r12], rax
-  %scall MPI_Finalize
+  %scall mympi_finalize
   mov rsp, rbp
   pop rbp
   xor rax, rax
@@ -136,13 +129,8 @@ func Assembly(code []*Command, file string) (string, error) {
 			break
 		case '$':
 			for i := 0; i < c.Count; i++ {
-				program += "mov rdi, 1" + br
-		    	program += "lea rsi, [r12]" + br
-		    	program += "mov rdx, 1" + br
-				program += "mov rcx, ompi_mpi_int" + br
-				program += "mov r8, ompi_mpi_op_sum" + br
-				program += "mov r9, ompi_mpi_comm_world" + br
-				program += "call MPI_Allreduce" + br
+				program += "lea rdi, [r12]" + br
+				program += "call mympi_allreduce" + br
 			}
 			break
 		}

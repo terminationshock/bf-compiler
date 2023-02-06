@@ -8,7 +8,8 @@ var (
 	cli struct {
 		File string `arg:"" required:"" type:"existingfile" help:"Input file"`
 		Output string `short:"o" default:"a.out" help:"Name of the executable file."`
-		MpiPath string `short:"L" default:"." type:"existingdir" help:"Path to the MPI library."`
+		Lib string `short:"L" default:"." type:"existingdir" help:"Path to the MPI library."`
+		Include string `short:"I" default:"." type:"existingdir" help:"Path to the MPI header file."`
 		Assembly bool `short:"s" help:"Whether to output assembly code."`
 		Verbose bool `short:"v" help:"Whether to print verbose information."`
 	}
@@ -23,6 +24,8 @@ func main() {
 	asm, err := Assembly(code, cli.File)
 	ctx.FatalIfErrorf(err)
 
-	err = Compile(asm, cli.Output, cli.MpiPath, cli.Assembly, cli.Verbose)
+	c := Library()
+
+	err = Compile(asm, c, cli.Output, cli.Include, cli.Lib, cli.Assembly, cli.Verbose)
 	ctx.FatalIfErrorf(err)
 }

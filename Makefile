@@ -1,5 +1,7 @@
 .PHONY: clean check
 
+MPI_HOME=/usr/lib64/mpi/gcc/openmpi4
+
 exe=mpibf
 
 $(exe): .FORCE
@@ -23,4 +25,4 @@ check: $(exe) hello_world.test add.test rot13.test mpi_sum.test_mpi
 	diff -q test/$*.out <(mpiexec -n 4 ./$*.x)
 
 %.x: test/%.bf
-	./mpibf -o $@ $< -L$(LD_LIBRARY_PATH)
+	./mpibf -o $@ $< -L$(MPI_HOME)/lib64 -I$(MPI_HOME)/include
