@@ -15,14 +15,22 @@ clean:
 	rm -f *.x
 	rm -f *.asm
 
-check: $(exe) hello_world.test add.test rot13.test numwarp.test primes.test mpi_sum.test_mpi
+SERIAL_TEST_FILES=hello_world add rot13 numwarp primes
+MPI_TEST_FILES=sum
+SERIAL_TESTS=$(patsubst %, test/serial/%, $(SERIAL_TEST_FILES))
+MPI_TESTS=$(patsubst %, test/mpi/%, $(MPI_TEST_FILES))
 
-%.test: %.x
-	test ! -f test/$*.in || diff -q test/$*.out <(./$*.x < test/$*.in)
-	test -f test/$*.in || diff -q test/$*.out <(./$*.x)
+check: $(exe) $(SERIAL_TESTS) $(MPI_TESTS)
 
-%.test_mpi: %.x
-	diff -q test/$*.out <(mpiexec -n 4 ./$*.x)
+test/serial/%: test/serial/%.x
+	test ! -f $@.in || diff -q $@.out <(./$< < $@.in)
+	test -f $@.in || diff -q $@.out <(./$<)
 
-%.x: test/%.bf
+test/mpi/%: test/mpi/%.x
+	diff -q $@.out <(mpiexec -n 4 ./$<)
+
+test/serial/%.x: test/serial/%.bf
+	./mpibf -o $@ $<
+
+test/mpi/%.x: test/mpi/%.bf
 	./mpibf -o $@ $< -L$(MPI_HOME)/lib64 -I$(MPI_HOME)/include
