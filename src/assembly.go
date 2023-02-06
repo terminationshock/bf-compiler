@@ -32,14 +32,8 @@ main:
   mov r13, [r12]
   xor rax, rax
   mov [r12], rax
-  mov r14, 10				
-  .loop0:
-  dec r14
-  cmp r14, 0
-  push rax
-  jne .loop0
-  %smov rsp, rbp
-  call MPI_Finalize
+  %scall MPI_Finalize
+  mov rsp, rbp
   pop rbp
   xor rax, rax
   ret`
@@ -53,16 +47,34 @@ type Loop struct {
 }
 
 func Assembly(code []*Command, file string) (string, error) {
+	skipId := 0
 	loopId := 0
 	loops := []*Loop{}
 
 	program := ""
 
+	/*
+		Special registers:
+			r12: Brainfuck stack pointer
+			r13: MPI rank
+	*/
 	for _, c := range code {
 		program += fmt.Sprintf("; %c at (%d,%d)", c.Char, c.Row, c.Col) + br
 		switch c.Char {
 		case '>':
+			skipId++
 			program += fmt.Sprintf("sub r12, %d", 8 * c.Count) + br
+			program += "cmp r12, rsp" + br
+			program += "jge " + fmt.Sprintf(".skip%d", skipId) + br
+			j := c.Count
+			if j % 2 != 0 {
+				j++
+			}
+			program += "xor rax, rax" + br
+			for i := 0; i < j; i++ {
+				program += "push rax" + br
+			}
+			program += fmt.Sprintf(".skip%d:", skipId) + br
 			break
 		case '<':
 			program += fmt.Sprintf("add r12, %d", 8 * c.Count) + br

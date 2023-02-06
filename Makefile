@@ -5,12 +5,13 @@ exe=mpibf
 $(exe): .FORCE
 
 .FORCE:
-	go build -o $(exe) src/*
+	go build -o $(exe) src/*.go
 
 clean:
 	rm -f $(exe)
 	rm -f a.out
 	rm -f *.x
+	rm -f *.asm
 
 check: $(exe) hello_world.test add.test rot13.test mpi_sum.test_mpi
 
