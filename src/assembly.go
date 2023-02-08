@@ -117,13 +117,6 @@ func Assembly(code []*Command, file string) (string, error) {
 				program += fmt.Sprintf(".break%d:", loop) + br
 			}
 			break
-		case "?":
-			for i := 0; i < c.Count; i++ {
-				program += "mov rdi, [r12]" + br
-				program += "add rdi, 48" + br
-				program += "call putchar" + br
-			}
-			break
 		case "#":
 			program += "mov [r12], r13" + br
 			break
