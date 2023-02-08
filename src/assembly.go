@@ -73,14 +73,10 @@ func Assembly(code []*Command, file string) (string, error) {
 			program += fmt.Sprintf("add r12, %d", 8 * c.Count) + br
 			break
 		case '+':
-			program += "mov rax, [r12]" + br
-			program += fmt.Sprintf("add rax, %d", c.Count) + br
-			program += "mov [r12], rax" + br
+			program += fmt.Sprintf("add dword [r12], %d", c.Count) + br
 			break
 		case '-':
-			program += "mov rax, [r12]" + br
-			program += fmt.Sprintf("sub rax, %d", c.Count) + br
-			program += "mov [r12], rax" + br
+			program += fmt.Sprintf("sub dword [r12], %d", c.Count) + br
 			break
 		case '.':
 			for i := 0; i < c.Count; i++ {
@@ -102,8 +98,7 @@ func Assembly(code []*Command, file string) (string, error) {
 					Row: c.Row,
 					Col: c.Col,
 				})
-				program += "mov rax, [r12]" + br
-				program += "cmp rax, 0" + br
+				program += "cmp dword [r12], 0" + br
 				program += "je " + fmt.Sprintf(".break%d", loopId) + br
 				program += fmt.Sprintf(".loop%d:", loopId) + br
 			}
