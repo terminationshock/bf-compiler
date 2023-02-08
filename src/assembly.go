@@ -52,9 +52,9 @@ func Assembly(code []*Command, file string) (string, error) {
 			r13: MPI rank
 	*/
 	for _, c := range code {
-		program += fmt.Sprintf("; %c at (%d,%d)", c.Char, c.Row, c.Col) + br
-		switch c.Char {
-		case '>':
+		program += fmt.Sprintf("; %s at (%d,%d)", c.String, c.Row, c.Col) + br
+		switch c.String {
+		case ">":
 			skipId++
 			program += fmt.Sprintf("sub r12, %d", 8 * c.Count) + br
 			program += "cmp r12, rsp" + br
@@ -69,28 +69,28 @@ func Assembly(code []*Command, file string) (string, error) {
 			}
 			program += fmt.Sprintf(".skip%d:", skipId) + br
 			break
-		case '<':
+		case "<":
 			program += fmt.Sprintf("add r12, %d", 8 * c.Count) + br
 			break
-		case '+':
+		case "+":
 			program += fmt.Sprintf("add dword [r12], %d", c.Count) + br
 			break
-		case '-':
+		case "-":
 			program += fmt.Sprintf("sub dword [r12], %d", c.Count) + br
 			break
-		case '.':
+		case ".":
 			for i := 0; i < c.Count; i++ {
 				program += "mov rdi, [r12]" + br
 				program += "call putchar" + br
 			}
 			break
-		case ',':
+		case ",":
 			for i := 0; i < c.Count; i++ {
 				program += "call getchar" + br
 				program += "mov [r12], rax" + br
 			}
 			break
-		case '[':
+		case "[":
 			for i := 0; i < c.Count; i++ {
 				loopId++
 				loops = append(loops, &Loop {
@@ -103,7 +103,7 @@ func Assembly(code []*Command, file string) (string, error) {
 				program += fmt.Sprintf(".loop%d:", loopId) + br
 			}
 			break
-		case ']':
+		case "]":
 			for i := 0; i < c.Count; i++ {
 				n := len(loops) - 1
 				if n < 0 {
@@ -117,14 +117,41 @@ func Assembly(code []*Command, file string) (string, error) {
 				program += fmt.Sprintf(".break%d:", loop) + br
 			}
 			break
-		case '#':
+		case "?":
+			for i := 0; i < c.Count; i++ {
+				program += "mov rdi, [r12]" + br
+				program += "add rdi, 48" + br
+				program += "call putchar" + br
+			}
+			break
+		case "#":
 			program += "mov [r12], r13" + br
 			break
-		case '$':
+		case "$":
 			for i := 0; i < c.Count; i++ {
 				program += "lea rdi, [r12]" + br
 				program += "call mympi_allreduce" + br
 			}
+			break
+		case SET_ZERO:
+			program += "mov dword [r12], 0" + br
+			break
+		case ADD_LEFT:
+			program += "mov rax, [r12]" + br
+			program += "add [r12+8], rax" + br
+			program += "mov dword [r12], 0" + br
+			break
+		case ADD_RIGHT:
+			skipId++
+			program += "cmp r12, rsp" + br
+			program += "jg " + fmt.Sprintf(".skip%d", skipId) + br
+			program += "xor rax, rax" + br
+			program += "push rax" + br
+			program += "push rax" + br
+			program += fmt.Sprintf(".skip%d:", skipId) + br
+			program += "mov rax, [r12]" + br
+			program += "add [r12-8], rax" + br
+			program += "mov dword [r12], 0" + br
 			break
 		}
 	}

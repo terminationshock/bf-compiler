@@ -7,7 +7,7 @@ import (
 )
 
 type Command struct {
-	Char rune
+	String string
 	Count int
 	Row int
 	Col int
@@ -25,9 +25,9 @@ func Parse(file string) ([]*Command, bool, error) {
 	code := []*Command{}
 	for _, char := range content {
 		r := rune(char)
-		if strings.ContainsRune("><+-.,[]#$", r) {
+		if strings.ContainsRune("><+-.,[]#$?", r) {
 			command := &Command {
-				Char: rune(char),
+				String: string(char),
 				Count: 1,
 				Row: row,
 				Col: col,
@@ -49,18 +49,5 @@ func Parse(file string) ([]*Command, bool, error) {
 		return nil, false, errors.New("Empty program")
 	}
 
-	cnt := 0
-	optimizedCode := []*Command{code[0]}
-	i := 1
-	for i < len(code) {
-		if optimizedCode[cnt].Char == code[i].Char {
-			optimizedCode[cnt].Count++
-		} else {
-			optimizedCode = append(optimizedCode, code[i])
-			cnt++
-		}
-		i++
-	}
-
-	return optimizedCode, hasMpi, nil
+	return code, hasMpi, nil
 }
