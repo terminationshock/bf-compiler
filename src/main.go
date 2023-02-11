@@ -12,6 +12,7 @@ var (
 		Lib string `short:"L" default:"." type:"existingdir" help:"Path to the MPI library."`
 		Assembly bool `short:"S" help:"Whether to output assembly code."`
 		Optimize int `short:"O" enum:"0,1" default:"1" help:"Optimization level."`
+		StackSize int `default:"30000" help:"Stack size."`
 		Verbose bool `short:"v" help:"Whether to print verbose information."`
 	}
 )
@@ -26,7 +27,7 @@ func main() {
 		code = Optimize(code)
 	}
 
-	s, err := Assembly(code, cli.File)
+	s, err := Assembly(code, cli.File, cli.StackSize)
 	ctx.FatalIfErrorf(err)
 
 	c := Library(hasMpi)

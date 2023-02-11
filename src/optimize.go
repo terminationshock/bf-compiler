@@ -13,37 +13,20 @@ func Optimize(commands []*Command) []*Command {
 	for i < len(commands) {
 		if optimized[cnt].String == commands[i].String {
 			optimized[cnt].Count++
+			cnt--
 		} else if isPattern(SET_ZERO, i, commands) {
-			optimized = append(optimized, &Command {
-				String: SET_ZERO,
-				Count: 1,
-				Row: commands[i].Row,
-				Col: commands[i].Col,
-			})
+			optimized = append(optimized, newCommand(SET_ZERO, commands[i]))
 			i += 2
-			cnt++
 		} else if isPattern(ADD_LEFT, i, commands) {
-			optimized = append(optimized, &Command {
-				String: ADD_LEFT,
-				Count: 1,
-				Row: commands[i].Row,
-				Col: commands[i].Col,
-			})
+			optimized = append(optimized, newCommand(ADD_LEFT, commands[i]))
 			i += 5
-			cnt++
 		} else if isPattern(ADD_RIGHT, i, commands) {
-			optimized = append(optimized, &Command {
-				String: ADD_RIGHT,
-				Count: 1,
-				Row: commands[i].Row,
-				Col: commands[i].Col,
-			})
+			optimized = append(optimized, newCommand(ADD_RIGHT, commands[i]))
 			i += 5
-			cnt++
 		} else {
 			optimized = append(optimized, commands[i])
-			cnt++
 		}
+		cnt++
 		i++
 	}
 
@@ -63,4 +46,13 @@ func isPattern(pattern string, i int, commands []*Command) bool {
 	}
 
 	return true
+}
+
+func newCommand(pattern string, command *Command) *Command {
+	return &Command {
+		String: pattern,
+		Count: 1,
+		Row: command.Row,
+		Col: command.Col,
+	}
 }

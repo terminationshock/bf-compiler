@@ -13,6 +13,13 @@ main:
   movq %%rsp, %%rbp
   subq $16, %%rsp
   movq %%rsp, %%r12
+  xorq %%rax, %%rax
+  movq $%d, %%r13
+  .loop0:
+  pushq %%rax
+  subq $1, %%r13
+  cmpq $0, %%r13
+  jne .loop0
   call mympi_init
   call mympi_rank
   movq %%rax, %%r13
@@ -34,7 +41,7 @@ type Loop struct {
 	Col int
 }
 
-func Assembly(code []*Command, file string) (string, error) {
+func Assembly(code []*Command, file string, stackSize int) (string, error) {
 	skipId := 0
 	loopId := 0
 	loops := []*Loop{}
@@ -50,19 +57,7 @@ func Assembly(code []*Command, file string) (string, error) {
 		program += fmt.Sprintf("# %s at (%d,%d)", c.String, c.Row, c.Col) + br
 		switch c.String {
 		case ">":
-			skipId++
 			program += fmt.Sprintf("subq $%d, %%r12", 8 * c.Count) + br
-			program += "cmpq %rsp, %r12" + br
-			program += "jge " + fmt.Sprintf(".skip%d", skipId) + br
-			j := c.Count
-			if j % 2 != 0 {
-				j++
-			}
-			program += "xor %rax, %rax" + br
-			for i := 0; i < j; i++ {
-				program += "pushq %rax" + br
-			}
-			program += fmt.Sprintf(".skip%d:", skipId) + br
 			break
 		case "<":
 			program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
@@ -93,9 +88,9 @@ func Assembly(code []*Command, file string) (string, error) {
 					Row: c.Row,
 					Col: c.Col,
 				})
+				program += fmt.Sprintf(".loop%d:", loopId) + br
 				program += "cmpq $0, (%r12)" + br
 				program += "je " + fmt.Sprintf(".break%d", loopId) + br
-				program += fmt.Sprintf(".loop%d:", loopId) + br
 			}
 			break
 		case "]":
@@ -106,9 +101,7 @@ func Assembly(code []*Command, file string) (string, error) {
 				}
 				loop := loops[n].Number
 				loops = loops[:n]
-				program += "movq (%r12), %rax" + br
-				program += "cmpq $0, %rax" + br
-				program += "jne " + fmt.Sprintf(".loop%d", loop) + br
+				program += "jmp " + fmt.Sprintf(".loop%d", loop) + br
 				program += fmt.Sprintf(".break%d:", loop) + br
 			}
 			break
@@ -131,12 +124,6 @@ func Assembly(code []*Command, file string) (string, error) {
 			break
 		case ADD_RIGHT:
 			skipId++
-			program += "cmpq %rsp, %r12" + br
-			program += "jg " + fmt.Sprintf(".skip%d", skipId) + br
-			program += "xor %rax, %rax" + br
-			program += "pushq %rax" + br
-			program += "pushq %rax" + br
-			program += fmt.Sprintf(".skip%d:", skipId) + br
 			program += "movq (%r12), %rax" + br
 			program += "addq %rax, -8(%r12)" + br
 			program += "movq $0, (%r12)" + br
@@ -149,5 +136,5 @@ func Assembly(code []*Command, file string) (string, error) {
 		return "", errors.New(fmt.Sprintf("No matching loop end at %s:%d:%d", file, loops[n].Row, loops[n].Col))
 	}
 
-	return fmt.Sprintf(template, program), nil
+	return fmt.Sprintf(template, stackSize, program), nil
 }
