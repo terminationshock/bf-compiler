@@ -31,6 +31,6 @@ func main() {
 
 	c := Library(hasMpi)
 
-	err = Compile(asm, c, cli.Output, cli.Include, cli.Lib, hasMpi, cli.Assembly, cli.Verbose)
+	err = CompileAndLink(asm, c, cli.Output, cli.Include, cli.Lib, hasMpi, cli.Assembly, cli.Verbose)
 	ctx.FatalIfErrorf(err)
 }
