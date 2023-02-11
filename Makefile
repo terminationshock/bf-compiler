@@ -13,7 +13,7 @@ clean:
 	rm -f $(exe)
 	rm -f a.out
 	rm -f *.x
-	rm -f *.asm
+	rm -f *.s
 
 SERIAL_TEST_FILES=hello_world add rot13 numwarp primes pi
 MPI_TEST_FILES=sum

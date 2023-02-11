@@ -10,7 +10,7 @@ var (
 		Output string `short:"o" default:"a.out" help:"Name of the executable file."`
 		Include string `short:"I" default:"." type:"existingdir" help:"Path to the MPI header file."`
 		Lib string `short:"L" default:"." type:"existingdir" help:"Path to the MPI library."`
-		Assembly bool `short:"s" help:"Whether to output assembly code."`
+		Assembly bool `short:"S" help:"Whether to output assembly code."`
 		Optimize int `short:"O" enum:"0,1" default:"1" help:"Optimization level."`
 		Verbose bool `short:"v" help:"Whether to print verbose information."`
 	}
@@ -26,11 +26,11 @@ func main() {
 		code = Optimize(code)
 	}
 
-	asm, err := Assembly(code, cli.File)
+	s, err := Assembly(code, cli.File)
 	ctx.FatalIfErrorf(err)
 
 	c := Library(hasMpi)
 
-	err = CompileAndLink(asm, c, cli.Output, cli.Include, cli.Lib, hasMpi, cli.Assembly, cli.Verbose)
+	err = CompileAndLink(s, c, cli.Output, cli.Include, cli.Lib, hasMpi, cli.Assembly, cli.Verbose)
 	ctx.FatalIfErrorf(err)
 }

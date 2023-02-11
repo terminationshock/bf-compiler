@@ -6,30 +6,25 @@ import (
 )
 
 var (
-	template = `global main
-extern putchar
-extern getchar
-extern mympi_init
-extern mympi_rank
-extern mympi_allreduce
-extern mympi_finalize
-section .text
-
+	template = `.text
+.globl main
 main:
-  push rbp
-  mov rbp, rsp
-  sub rsp, 16
-  mov r12, rsp
+  pushq %%rbp
+  movq %%rsp, %%rbp
+  subq $16, %%rsp
+  movq %%rsp, %%r12
   call mympi_init
   call mympi_rank
-  mov r13, rax
-  xor rax, rax
-  mov [r12], rax
+  movq %%rax, %%r13
+  xorq %%rax, %%rax
+  movq %%rax, (%%r12)
   %scall mympi_finalize
-  mov rsp, rbp
-  pop rbp
-  xor rax, rax
-  ret`
+  movq %%rbp, %%rsp
+  popq %%rbp
+  xorq %%rax, %%rax
+  ret
+.section .note.GNU-stack
+`
 	br = "\n  "
 )
 
@@ -52,42 +47,42 @@ func Assembly(code []*Command, file string) (string, error) {
 			r13: MPI rank
 	*/
 	for _, c := range code {
-		program += fmt.Sprintf("; %s at (%d,%d)", c.String, c.Row, c.Col) + br
+		program += fmt.Sprintf("# %s at (%d,%d)", c.String, c.Row, c.Col) + br
 		switch c.String {
 		case ">":
 			skipId++
-			program += fmt.Sprintf("sub r12, %d", 8 * c.Count) + br
-			program += "cmp r12, rsp" + br
+			program += fmt.Sprintf("subq $%d, %%r12", 8 * c.Count) + br
+			program += "cmpq %rsp, %r12" + br
 			program += "jge " + fmt.Sprintf(".skip%d", skipId) + br
 			j := c.Count
 			if j % 2 != 0 {
 				j++
 			}
-			program += "xor rax, rax" + br
+			program += "xor %rax, %rax" + br
 			for i := 0; i < j; i++ {
-				program += "push rax" + br
+				program += "pushq %rax" + br
 			}
 			program += fmt.Sprintf(".skip%d:", skipId) + br
 			break
 		case "<":
-			program += fmt.Sprintf("add r12, %d", 8 * c.Count) + br
+			program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
 			break
 		case "+":
-			program += fmt.Sprintf("add dword [r12], %d", c.Count) + br
+			program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
 			break
 		case "-":
-			program += fmt.Sprintf("sub dword [r12], %d", c.Count) + br
+			program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
 			break
 		case ".":
 			for i := 0; i < c.Count; i++ {
-				program += "mov rdi, [r12]" + br
+				program += "movq (%r12), %rdi" + br
 				program += "call putchar" + br
 			}
 			break
 		case ",":
 			for i := 0; i < c.Count; i++ {
 				program += "call getchar" + br
-				program += "mov [r12], rax" + br
+				program += "movq %rax, (%r12)" + br
 			}
 			break
 		case "[":
@@ -98,7 +93,7 @@ func Assembly(code []*Command, file string) (string, error) {
 					Row: c.Row,
 					Col: c.Col,
 				})
-				program += "cmp dword [r12], 0" + br
+				program += "cmpq $0, (%r12)" + br
 				program += "je " + fmt.Sprintf(".break%d", loopId) + br
 				program += fmt.Sprintf(".loop%d:", loopId) + br
 			}
@@ -111,40 +106,40 @@ func Assembly(code []*Command, file string) (string, error) {
 				}
 				loop := loops[n].Number
 				loops = loops[:n]
-				program += "mov rax, [r12]" + br
-				program += "cmp rax, 0" + br
+				program += "movq (%r12), %rax" + br
+				program += "cmpq $0, %rax" + br
 				program += "jne " + fmt.Sprintf(".loop%d", loop) + br
 				program += fmt.Sprintf(".break%d:", loop) + br
 			}
 			break
 		case "#":
-			program += "mov [r12], r13" + br
+			program += "movq %r13, (%r12)" + br
 			break
 		case "$":
 			for i := 0; i < c.Count; i++ {
-				program += "lea rdi, [r12]" + br
+				program += "leaq (%r12), %rdi" + br
 				program += "call mympi_allreduce" + br
 			}
 			break
 		case SET_ZERO:
-			program += "mov dword [r12], 0" + br
+			program += "movq $0, (%r12)" + br
 			break
 		case ADD_LEFT:
-			program += "mov rax, [r12]" + br
-			program += "add [r12+8], rax" + br
-			program += "mov dword [r12], 0" + br
+			program += "movq (%r12), %rax" + br
+			program += "addq %rax, +8(%r12)" + br
+			program += "movq $0, (%r12)" + br
 			break
 		case ADD_RIGHT:
 			skipId++
-			program += "cmp r12, rsp" + br
+			program += "cmpq %rsp, %r12" + br
 			program += "jg " + fmt.Sprintf(".skip%d", skipId) + br
-			program += "xor rax, rax" + br
-			program += "push rax" + br
-			program += "push rax" + br
+			program += "xor %rax, %rax" + br
+			program += "pushq %rax" + br
+			program += "pushq %rax" + br
 			program += fmt.Sprintf(".skip%d:", skipId) + br
-			program += "mov rax, [r12]" + br
-			program += "add [r12-8], rax" + br
-			program += "mov dword [r12], 0" + br
+			program += "movq (%r12), %rax" + br
+			program += "addq %rax, -8(%r12)" + br
+			program += "movq $0, (%r12)" + br
 			break
 		}
 	}

@@ -7,10 +7,10 @@ import (
 	"os/exec"
 )
 
-func CompileAndLink(asm, c, file, mpiIncludePath, mpiLibPath string, hasMpi, outputAsm, verbose bool) error {
-	fnameAsmo, err := compileAsm(asm, file, outputAsm, verbose)
-	if fnameAsmo != "" {
-		defer os.Remove(fnameAsmo)
+func CompileAndLink(s, c, exeFile, mpiIncludePath, mpiLibPath string, hasMpi, keepAssemblyFile, verbose bool) error {
+	fnameSo, err := compileAssembly(s, exeFile, keepAssemblyFile, verbose)
+	if fnameSo != "" {
+		defer os.Remove(fnameSo)
 	}
 	if err != nil {
 		return err
@@ -23,30 +23,30 @@ func CompileAndLink(asm, c, file, mpiIncludePath, mpiLibPath string, hasMpi, out
 		return err
 	}
 
-	return link(fnameAsmo, fnameCo, file, mpiLibPath, hasMpi, verbose)
+	return link(fnameSo, fnameCo, exeFile, mpiLibPath, hasMpi, verbose)
 }
 
-func compileAsm(asm, file string, outputAsm, verbose bool) (string, error) {
-	var fasm *os.File
+func compileAssembly(s, exeFile string, keepAssemblyFile, verbose bool) (string, error) {
+	var fs *os.File
 	var err error
 
-	if outputAsm {
-		fasm, err = os.Create(file + ".asm")
+	if keepAssemblyFile {
+		fs, err = os.Create(exeFile + ".s")
 	} else {
-		fasm, err = os.CreateTemp("", "*.asm")
-		defer os.Remove(fasm.Name())
+		fs, err = os.CreateTemp("", "*.s")
+		defer os.Remove(fs.Name())
 	}
 	if err != nil {
 		return "", err
 	}
 
-	defer fasm.Close()
+	defer fs.Close()
 
-	_, err = fasm.Write([]byte(asm))
+	_, err = fs.Write([]byte(s))
 	if err != nil {
 		return "", err
 	}
-	fasm.Close()
+	fs.Close()
 
 	fo, err := os.CreateTemp("", "*.o")
 	if err != nil {
@@ -54,11 +54,11 @@ func compileAsm(asm, file string, outputAsm, verbose bool) (string, error) {
 	}
 	fo.Close()
 
-	cmd := exec.Command("nasm", "-f", "elf64", "-o", fo.Name(), fasm.Name())
+	cmd := exec.Command("gcc", "-c", "-o", fo.Name(), fs.Name())
 	if verbose {
 		fmt.Println(cmd.String())
 	}
-	err = executeCommand(cmd)
+	err = executeCommand(cmd, verbose)
 	if err != nil {
 		return fo.Name(), err
 	}
@@ -91,7 +91,7 @@ func compileMpi(c, mpiIncludePath string, hasMpi, verbose bool) (string, error) 
 	if verbose {
 		fmt.Println(cmd.String())
 	}
-	err = executeCommand(cmd)
+	err = executeCommand(cmd, verbose)
 	if err != nil {
 		return fo.Name(), err
 	}
@@ -99,8 +99,8 @@ func compileMpi(c, mpiIncludePath string, hasMpi, verbose bool) (string, error) 
 	return fo.Name(), nil
 }
 
-func link(fnameAsmo, fnameCo, file, mpiLibPath string, hasMpi, verbose bool) error {
-	tokens := []string{"-o", file, fnameAsmo, fnameCo}
+func link(fnameSo, fnameCo, exeFile, mpiLibPath string, hasMpi, verbose bool) error {
+	tokens := []string{"-o", exeFile, fnameSo, fnameCo}
 	if hasMpi {
 		tokens = append(tokens, "-L", mpiLibPath, "-lmpi", "-Wl,-rpath," + mpiLibPath)
 	}
@@ -108,7 +108,7 @@ func link(fnameAsmo, fnameCo, file, mpiLibPath string, hasMpi, verbose bool) err
 	if verbose {
 		fmt.Println(cmd.String())
 	}
-	err := executeCommand(cmd)
+	err := executeCommand(cmd, verbose)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,11 @@ func link(fnameAsmo, fnameCo, file, mpiLibPath string, hasMpi, verbose bool) err
 	return nil
 }
 
-func executeCommand(cmd *exec.Cmd) error {
+func executeCommand(cmd *exec.Cmd, verbose bool) error {
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
@@ -127,10 +131,17 @@ func executeCommand(cmd *exec.Cmd) error {
 		return err
 	}
 
-	output, _ := io.ReadAll(stderr)
+	outputStdout, _ := io.ReadAll(stdout)
+	outputStderr, _ := io.ReadAll(stderr)
 	err = cmd.Wait()
+
+	if verbose {
+		os.Stdout.Write(outputStdout)
+	}
+	if verbose || err != nil {
+		os.Stderr.Write(outputStderr)
+	}
 	if err != nil {
-		os.Stderr.Write(output)
 		return err
 	}
 
