@@ -14,21 +14,16 @@ main:
   subq $16, %%rsp
   movq %%rsp, %%r12
   xorq %%rax, %%rax
+  movq %%rax, (%%r12)
   movq $%d, %%r13
   .loop0:
   pushq %%rax
   subq $1, %%r13
   cmpq $0, %%r13
   jne .loop0
-  call mympi_init
-  call mympi_rank
-  movq %%rax, %%r13
-  xorq %%rax, %%rax
-  movq %%rax, (%%r12)
-  %scall mympi_finalize
+  %sxorq %%rax, %%rax
   movq %%rbp, %%rsp
   popq %%rbp
-  xorq %%rax, %%rax
   ret
 .section .note.GNU-stack
 `
@@ -42,17 +37,11 @@ type Loop struct {
 }
 
 func Assembly(code []*Command, file string, stackSize int) (string, error) {
-	skipId := 0
 	loopId := 0
 	loops := []*Loop{}
 
 	program := ""
 
-	/*
-		Special registers:
-			r12: Brainfuck stack pointer
-			r13: MPI rank
-	*/
 	for _, c := range code {
 		program += fmt.Sprintf("# %s at (%d,%d)", c.String, c.Row, c.Col) + br
 		switch c.String {
@@ -105,15 +94,6 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 				program += fmt.Sprintf(".break%d:", loop) + br
 			}
 			break
-		case "#":
-			program += "movq %r13, (%r12)" + br
-			break
-		case "$":
-			for i := 0; i < c.Count; i++ {
-				program += "leaq (%r12), %rdi" + br
-				program += "call mympi_allreduce" + br
-			}
-			break
 		case SET_ZERO:
 			program += "movq $0, (%r12)" + br
 			break
@@ -123,7 +103,6 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 			program += "movq $0, (%r12)" + br
 			break
 		case ADD_RIGHT:
-			skipId++
 			program += "movq (%r12), %rax" + br
 			program += "addq %rax, -8(%r12)" + br
 			program += "movq $0, (%r12)" + br
@@ -136,5 +115,9 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 		return "", errors.New(fmt.Sprintf("No matching loop end at %s:%d:%d", file, loops[n].Row, loops[n].Col))
 	}
 
-	return fmt.Sprintf(template, stackSize, program), nil
+	if stackSize < 1 {
+		return "", errors.New("Invalid stack size")
+	}
+
+	return fmt.Sprintf(template, stackSize - 1, program), nil
 }

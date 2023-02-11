@@ -1,7 +1,5 @@
 .PHONY: clean check
 
-MPI_HOME=/usr/lib64/mpi/gcc/openmpi4
-
 EXE=mpibf
 
 $(EXE): .FORCE
@@ -15,22 +13,19 @@ clean:
 	rm -f *.x
 	rm -f *.s
 
-SERIAL_TEST_FILES=hello_world add rot13 pi
-MPI_TEST_FILES=sum
-SERIAL_TESTS=$(patsubst %, test/serial/%, $(SERIAL_TEST_FILES))
-MPI_TESTS=$(patsubst %, test/mpi/%, $(MPI_TEST_FILES))
+TEST_FILES=hello_world add rot13 pi
+TESTS=$(patsubst %, test/%, $(TEST_FILES))
 
-check: $(EXE) $(SERIAL_TESTS) $(MPI_TESTS)
+check: $(EXE) $(TESTS)
 
-test/serial/%: test/serial/%.x
+test/%: test/%.0.x test/%.1.x
 	test ! -f $@.in || diff -q $@.out <(./$< < $@.in)
 	test -f $@.in || diff -q $@.out <(./$<)
+	test ! -f $@.in || diff -q $@.out <(./$(word 2,$^) < $@.in)
+	test -f $@.in || diff -q $@.out <(./$(word 2,$^))
 
-test/mpi/%: test/mpi/%.x
-	diff -q $@.out <(mpiexec -n 4 ./$<)
+test/%.0.x: test/%.bf
+	./mpibf -o $@ -O0 $<
 
-test/serial/%.x: test/serial/%.bf
-	./mpibf -o $@ $<
-
-test/mpi/%.x: test/mpi/%.bf
-	./mpibf -o $@ $< -L$(MPI_HOME)/lib64 -I$(MPI_HOME)/include
+test/%.1.x: test/%.bf
+	./mpibf -o $@ -O1 $<
