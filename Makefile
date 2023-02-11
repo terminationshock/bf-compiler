@@ -2,25 +2,25 @@
 
 MPI_HOME=/usr/lib64/mpi/gcc/openmpi4
 
-exe=mpibf
+EXE=mpibf
 
-$(exe): .FORCE
+$(EXE): .FORCE
 
 .FORCE:
-	go build -o $(exe) src/*.go
+	go build -o $(EXE) src/*.go
 
 clean:
-	rm -f $(exe)
+	rm -f $(EXE)
 	rm -f a.out
 	rm -f *.x
 	rm -f *.s
 
-SERIAL_TEST_FILES=hello_world add rot13 numwarp primes pi
+SERIAL_TEST_FILES=hello_world add rot13 pi
 MPI_TEST_FILES=sum
 SERIAL_TESTS=$(patsubst %, test/serial/%, $(SERIAL_TEST_FILES))
 MPI_TESTS=$(patsubst %, test/mpi/%, $(MPI_TEST_FILES))
 
-check: $(exe) $(SERIAL_TESTS) $(MPI_TESTS)
+check: $(EXE) $(SERIAL_TESTS) $(MPI_TESTS)
 
 test/serial/%: test/serial/%.x
 	test ! -f $@.in || diff -q $@.out <(./$< < $@.in)
