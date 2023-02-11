@@ -1,6 +1,7 @@
 package main
 
 const (
+	EMPTY_LOOP = "[]"
 	SET_ZERO = "[-]"
 	ADD_LEFT = "[<+>-]"
 	ADD_RIGHT = "[>+<-]"
@@ -14,6 +15,9 @@ func Optimize(commands []*Command) []*Command {
 		if optimized[cnt].String == commands[i].String {
 			optimized[cnt].Count++
 			cnt--
+		} else if isPattern(EMPTY_LOOP, i, commands) {
+			optimized = append(optimized, newCommand(EMPTY_LOOP, commands[i]))
+			i += 1
 		} else if isPattern(SET_ZERO, i, commands) {
 			optimized = append(optimized, newCommand(SET_ZERO, commands[i]))
 			i += 2

@@ -36,7 +36,7 @@ type Loop struct {
 	Col int
 }
 
-func Assembly(code []*Command, file string, stackSize int) (string, error) {
+func Assembly(code []*Command, file string, stackSize int, optimize bool) (string, error) {
 	loopId := 0
 	loops := []*Loop{}
 
@@ -46,16 +46,40 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 		program += fmt.Sprintf("# %s at (%d,%d)", c.String, c.Row, c.Col) + br
 		switch c.String {
 		case ">":
-			program += fmt.Sprintf("subq $%d, %%r12", 8 * c.Count) + br
+			if optimize {
+				program += fmt.Sprintf("subq $%d, %%r12", 8 * c.Count) + br
+			} else {
+				for i := 0; i < c.Count; i++ {
+					program += "subq $8, %r12" + br
+				}
+			}
 			break
 		case "<":
-			program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
+			if optimize {
+				program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
+			} else {
+				for i := 0; i < c.Count; i++ {
+					program += "addq $8, %r12" + br
+				}
+			}
 			break
 		case "+":
-			program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
+			if optimize {
+				program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
+			} else {
+				for i := 0; i < c.Count; i++ {
+					program += "addq $1, (%r12)" + br
+				}
+			}
 			break
 		case "-":
-			program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
+			if optimize {
+				program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
+			} else {
+				for i := 0; i < c.Count; i++ {
+					program += "subq $1, (%r12)" + br
+				}
+			}
 			break
 		case ".":
 			for i := 0; i < c.Count; i++ {
@@ -94,6 +118,8 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 				program += fmt.Sprintf(".break%d:", loop) + br
 			}
 			break
+		case EMPTY_LOOP:
+			break
 		case SET_ZERO:
 			program += "movq $0, (%r12)" + br
 			break
@@ -119,5 +145,8 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 		return "", errors.New("Invalid stack size")
 	}
 
-	return fmt.Sprintf(template, stackSize - 1, program), nil
+	if stackSize % 2 > 0 {
+		stackSize++
+	}
+	return fmt.Sprintf(template, stackSize, program), nil
 }
