@@ -1,4 +1,4 @@
-module mpibf
+module bf-compiler
 
 go 1.19
 

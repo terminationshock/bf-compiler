@@ -1,6 +1,6 @@
 .PHONY: clean check
 
-EXE=mpibf
+EXE=bf
 
 $(EXE): .FORCE
 
@@ -25,7 +25,7 @@ test/%: test/%.0.x test/%.1.x
 	test -f $@.in || diff -q $@.out <(./$(word 2,$^))
 
 test/%.0.x: test/%.bf
-	./mpibf -o $@ -O0 $<
+	./$(EXE) -o $@ -O0 $<
 
 test/%.1.x: test/%.bf
-	./mpibf -o $@ -O1 $<
+	./$(EXE) -o $@ -O1 $<
