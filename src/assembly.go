@@ -86,24 +86,34 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 				return "", errors.New(fmt.Sprintf("No matching loop begin at %s:%d:%d", file, c.Row, c.Col))
 			}
 			loop := loops[n].Number
-			loops = loops[:n]
+			mergedBreak := fmt.Sprintf(".break%d", loop)
 			program += "jmp " + fmt.Sprintf(".loop%d", loop) + br
-			program += fmt.Sprintf(".break%d:", loop) + br
+			program += mergedBreak + ":" + br
+			for i := 1; i < c.Count; i++ {
+				n--
+				if n < 0 {
+					return "", errors.New(fmt.Sprintf("No matching loop begin at %s:%d:%d", file, c.Row, c.Col))
+				}
+				program = strings.Replace(program, fmt.Sprintf(".break%d", loops[n].Number), mergedBreak, -1)
+			}
+			loops = loops[:n]
 			break
-		case EMPTY_LOOP:
-			break
-		case SET_ZERO:
-			program += "movq $0, (%r12)" + br
-			break
-		case ADD_LEFT:
-			program += "movq (%r12), %rax" + br
-			program += "addq %rax, +8(%r12)" + br
-			program += "movq $0, (%r12)" + br
-			break
-		case ADD_RIGHT:
-			program += "movq (%r12), %rax" + br
-			program += "addq %rax, -8(%r12)" + br
-			program += "movq $0, (%r12)" + br
+		default:
+			if c.MultiplyLoop != nil {
+				for _, m := range c.MultiplyLoop {
+					if m.Factor > 1 || m.Factor < -1 {
+						program += fmt.Sprintf("imulq $%d, (%%r12), %%rax", abs(m.Factor)) + br
+					} else {
+						program += "movq (%r12), %rax" + br
+					}
+					if m.Factor > 0 {
+						program += fmt.Sprintf("addq %%rax, %d(%%r12)", -8 * m.CopyTo) + br
+					} else {
+						program += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.CopyTo) + br
+					}
+				}
+				program += "movq $0, (%r12)" + br
+			}
 			break
 		}
 	}
@@ -118,4 +128,11 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 	}
 
 	return fmt.Sprintf(template, stackSize, program), nil
+}
+
+func abs(val int) int {
+	if val < 0 {
+		return -val
+	}
+	return val
 }

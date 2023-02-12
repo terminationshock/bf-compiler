@@ -6,7 +6,7 @@ import (
 
 var (
 	cli struct {
-		File string `arg:"" required:"" type:"existingfile" help:"Input file"`
+		File string `arg:"" required:"" type:"existingfile" help:"Brainfuck source code file"`
 		Output string `short:"o" default:"a.out" help:"Name of the executable output file."`
 		Assembly bool `short:"S" help:"Whether to retain the assembly code file."`
 		Optimize int `short:"O" enum:"0,1" default:"1" help:"Optimization level."`
@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	ctx := kong.Parse(&cli)
+	ctx := kong.Parse(&cli, kong.Description("A Brainfuck compiler for Linux x86-64"), kong.UsageOnError())
 
 	code, err := Parse(cli.File)
 	ctx.FatalIfErrorf(err)

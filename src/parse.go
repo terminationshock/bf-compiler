@@ -10,6 +10,12 @@ type Command struct {
 	Count int
 	Row int
 	Col int
+	MultiplyLoop []*Multiply
+}
+
+type Multiply struct {
+	CopyTo int
+	Factor int
 }
 
 func Parse(file string) ([]*Command, error) {
