@@ -7,8 +7,8 @@ import (
 var (
 	cli struct {
 		File string `arg:"" required:"" type:"existingfile" help:"Input file"`
-		Output string `short:"o" default:"a.out" help:"Name of the executable file."`
-		Assembly bool `short:"S" help:"Whether to output assembly code."`
+		Output string `short:"o" default:"a.out" help:"Name of the executable output file."`
+		Assembly bool `short:"S" help:"Whether to retain the assembly code file."`
 		Optimize int `short:"O" enum:"0,1" default:"1" help:"Optimization level."`
 		StackSize int `default:"30000" help:"Stack size."`
 		Verbose bool `short:"v" help:"Whether to print verbose information."`

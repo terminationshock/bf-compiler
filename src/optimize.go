@@ -11,32 +11,53 @@ const (
 	ADD_RIGHT = "[>+<-]"
 )
 
-// TODO: Ignore the first loop				
 func Optimize(commands []*Command) []*Command {
-	cnt := 0
-	optimized := []*Command{commands[0]}
-	i := 1
+	cnt := -1
+	optimized := []*Command{}
+	i := 0
+	loop := 0
+	initialValueChanged := false
 	for i < len(commands) {
-		if optimized[cnt].String == commands[i].String && strings.Contains("><+-", commands[i].String) {
+		if loop > 0 {
+			// Skip all commands within the first useless loop(s)
+			if commands[i].String == "[" {
+				loop++
+			} else if commands[i].String == "]" {
+				loop--
+			}
+			i++
+		} else if cnt >= 0 && optimized[cnt].String == commands[i].String && strings.Contains("><+-", commands[i].String) {
+			// Increase counter for duplicated symbols
 			optimized[cnt].Count++
-			cnt--
+			i++
+		} else if !initialValueChanged && commands[i].String == "[" {
+			// Whether to skip a useless loop
+			loop = 1
+			i++
 		} else if isPattern(EMPTY_LOOP, i, commands) {
 			optimized = append(optimized, newCommand(EMPTY_LOOP, commands[i]))
-			i += 1
+			cnt++
+			i += 2
 		} else if isPattern(SET_ZERO, i, commands) {
 			optimized = append(optimized, newCommand(SET_ZERO, commands[i]))
-			i += 2
+			cnt++
+			i += 3
 		} else if isPattern(ADD_LEFT, i, commands) {
 			optimized = append(optimized, newCommand(ADD_LEFT, commands[i]))
-			i += 5
+			cnt++
+			i += 6
 		} else if isPattern(ADD_RIGHT, i, commands) {
 			optimized = append(optimized, newCommand(ADD_RIGHT, commands[i]))
-			i += 5
+			cnt++
+			i += 6
 		} else {
 			optimized = append(optimized, commands[i])
+			if !initialValueChanged {
+				initialValueChanged = strings.Contains("+-,", commands[i].String)
+			}
+			cnt++
+			i++
 		}
-		cnt++
-		i++
 	}
 
 	return optimized
