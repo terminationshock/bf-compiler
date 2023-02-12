@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -11,10 +12,9 @@ var (
 main:
   pushq %%rbp
   movq %%rsp, %%rbp
-  subq $16, %%rsp
   movq %%rsp, %%r12
+  subq $8, %%r12
   xorq %%rax, %%rax
-  movq %%rax, (%%r12)
   movq $%d, %%r13
   .loop0:
   pushq %%rax
@@ -36,87 +36,59 @@ type Loop struct {
 	Col int
 }
 
-func Assembly(code []*Command, file string, stackSize int, optimize bool) (string, error) {
+func Assembly(code []*Command, file string, stackSize int) (string, error) {
+	if stackSize < 1 {
+		return "", errors.New("Invalid stack size")
+	}
+
 	loopId := 0
 	loops := []*Loop{}
 
 	program := ""
 
 	for _, c := range code {
-		program += fmt.Sprintf("# %s at (%d,%d)", c.String, c.Row, c.Col) + br
+		program += fmt.Sprintf("# %s at (%d,%d)", strings.Repeat(c.String, c.Count), c.Row, c.Col) + br
 		switch c.String {
 		case ">":
-			if optimize {
-				program += fmt.Sprintf("subq $%d, %%r12", 8 * c.Count) + br
-			} else {
-				for i := 0; i < c.Count; i++ {
-					program += "subq $8, %r12" + br
-				}
-			}
+			program += fmt.Sprintf("subq $%d, %%r12", 8 * c.Count) + br
 			break
 		case "<":
-			if optimize {
-				program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
-			} else {
-				for i := 0; i < c.Count; i++ {
-					program += "addq $8, %r12" + br
-				}
-			}
+			program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
 			break
 		case "+":
-			if optimize {
-				program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
-			} else {
-				for i := 0; i < c.Count; i++ {
-					program += "addq $1, (%r12)" + br
-				}
-			}
+			program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
 			break
 		case "-":
-			if optimize {
-				program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
-			} else {
-				for i := 0; i < c.Count; i++ {
-					program += "subq $1, (%r12)" + br
-				}
-			}
+			program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
 			break
 		case ".":
-			for i := 0; i < c.Count; i++ {
-				program += "movq (%r12), %rdi" + br
-				program += "call putchar" + br
-			}
+			program += "movq (%r12), %rdi" + br
+			program += "call putchar" + br
 			break
 		case ",":
-			for i := 0; i < c.Count; i++ {
-				program += "call getchar" + br
-				program += "movq %rax, (%r12)" + br
-			}
+			program += "call getchar" + br
+			program += "movq %rax, (%r12)" + br
 			break
 		case "[":
-			for i := 0; i < c.Count; i++ {
-				loopId++
-				loops = append(loops, &Loop {
-					Number: loopId,
-					Row: c.Row,
-					Col: c.Col,
-				})
-				program += fmt.Sprintf(".loop%d:", loopId) + br
-				program += "cmpq $0, (%r12)" + br
-				program += "je " + fmt.Sprintf(".break%d", loopId) + br
-			}
+			loopId++
+			loops = append(loops, &Loop {
+				Number: loopId,
+				Row: c.Row,
+				Col: c.Col,
+			})
+			program += fmt.Sprintf(".loop%d:", loopId) + br
+			program += "cmpq $0, (%r12)" + br
+			program += "je " + fmt.Sprintf(".break%d", loopId) + br
 			break
 		case "]":
-			for i := 0; i < c.Count; i++ {
-				n := len(loops) - 1
-				if n < 0 {
-					return "", errors.New(fmt.Sprintf("No matching loop begin at %s:%d:%d", file, c.Row, c.Col))
-				}
-				loop := loops[n].Number
-				loops = loops[:n]
-				program += "jmp " + fmt.Sprintf(".loop%d", loop) + br
-				program += fmt.Sprintf(".break%d:", loop) + br
+			n := len(loops) - 1
+			if n < 0 {
+				return "", errors.New(fmt.Sprintf("No matching loop begin at %s:%d:%d", file, c.Row, c.Col))
 			}
+			loop := loops[n].Number
+			loops = loops[:n]
+			program += "jmp " + fmt.Sprintf(".loop%d", loop) + br
+			program += fmt.Sprintf(".break%d:", loop) + br
 			break
 		case EMPTY_LOOP:
 			break
@@ -141,12 +113,9 @@ func Assembly(code []*Command, file string, stackSize int, optimize bool) (strin
 		return "", errors.New(fmt.Sprintf("No matching loop end at %s:%d:%d", file, loops[n].Row, loops[n].Col))
 	}
 
-	if stackSize < 1 {
-		return "", errors.New("Invalid stack size")
-	}
-
 	if stackSize % 2 > 0 {
 		stackSize++
 	}
+
 	return fmt.Sprintf(template, stackSize, program), nil
 }

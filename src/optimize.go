@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strings"
+)
+
 const (
 	EMPTY_LOOP = "[]"
 	SET_ZERO = "[-]"
@@ -7,12 +11,13 @@ const (
 	ADD_RIGHT = "[>+<-]"
 )
 
+// TODO: Ignore the first loop				
 func Optimize(commands []*Command) []*Command {
 	cnt := 0
 	optimized := []*Command{commands[0]}
 	i := 1
 	for i < len(commands) {
-		if optimized[cnt].String == commands[i].String {
+		if optimized[cnt].String == commands[i].String && strings.Contains("><+-", commands[i].String) {
 			optimized[cnt].Count++
 			cnt--
 		} else if isPattern(EMPTY_LOOP, i, commands) {
