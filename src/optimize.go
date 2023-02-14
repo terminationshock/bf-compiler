@@ -1,10 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 )
 
-func Optimize(commands []*Command) []*Command {
+func Optimize(commands []*Command, verbose bool) []*Command {
 	cnt := -1
 	optimized := []*Command{}
 	i := 0
@@ -13,6 +14,9 @@ func Optimize(commands []*Command) []*Command {
 	currentLoop := []*Command{}
 	currentLoopBegin := 0
 
+	if verbose {
+		fmt.Println("Optimization report:")
+	}
 	for i < len(commands) {
 		if skippedLoop > 0 {
 			// Skip all commands within the first useless loop(s)
@@ -25,6 +29,7 @@ func Optimize(commands []*Command) []*Command {
 		} else if !initialValueChanged && commands[i].String == "[" {
 			// Whether to skip a useless loop
 			skippedLoop = 1
+			report(verbose, commands[i], "Skipping unreachable loop")
 			i++
 		} else if cnt >= 0 && optimized[cnt].String == commands[i].String && strings.Contains("><+-]", commands[i].String) {
 			// Increase counter for duplicated symbols
@@ -32,8 +37,15 @@ func Optimize(commands []*Command) []*Command {
 			i++
 		} else if i < len(commands) - 1 && commands[i].String == "[" && commands[i+1].String == "]" {
 			// Skip empty loop
+			report(verbose, commands[i], "Skipping empty loop []")
 			i += 2
 		} else {
+			if verbose {
+				n := len(optimized) - 1
+				if n >= 0 && optimized[n].Count > 1 {
+					report(verbose, optimized[n], "Merging commands", getPattern(optimized[n]))
+				}
+			}
 			optimized = append(optimized, commands[i])
 			cnt++
 			if !initialValueChanged {
@@ -48,8 +60,9 @@ func Optimize(commands []*Command) []*Command {
 					if isMultiplyLoop(currentLoop) {
 						cnt = currentLoopBegin
 						optimized = optimized[:cnt+1]
-						optimized[cnt].String = getMultiplyLoopPattern(currentLoop)
+						optimized[cnt].String = getLoopPattern(currentLoop)
 						optimized[cnt].MultiplyLoop = newMultiplyLoop(currentLoop)
+						report(verbose, currentLoop[0], "Optimizing loop", optimized[cnt].String)
 					}
 					currentLoop = []*Command{}
 				}
@@ -59,6 +72,18 @@ func Optimize(commands []*Command) []*Command {
 	}
 
 	return optimized
+}
+
+func getLoopPattern(commands []*Command) string {
+	pattern := ""
+	for _, c := range commands {
+		pattern += getPattern(c)
+	}
+	return pattern
+}
+
+func getPattern(c *Command) string {
+	return strings.Repeat(c.String, c.Count)
 }
 
 func isMultiplyLoop(commands []*Command) bool {
@@ -85,16 +110,6 @@ func isMultiplyLoop(commands []*Command) bool {
 		}
 	}
 	return found && pointer == 0
-}
-
-func getMultiplyLoopPattern(commands []*Command) string {
-	pattern := ""
-	for _, c := range commands {
-		for i := 0; i < c.Count; i++ {
-			pattern += c.String
-		}
-	}
-	return pattern
 }
 
 func newMultiplyLoop(commands []*Command) []*Multiply {
@@ -126,4 +141,16 @@ func newMultiplyLoop(commands []*Command) []*Multiply {
 		}
 	}
 	return m
+}
+
+func report(verbose bool, command *Command, message ...string) {
+	if verbose {
+		pos := ""
+		if command.Row < 10 {
+			pos += " "
+		}
+		pos = fmt.Sprintf("%s(%d:%d)", pos, command.Row, command.Col)
+		fill := strings.Repeat(" ", 9 - len(pos))
+		fmt.Printf("  %s %s%s\n", pos, fill, strings.Join(message, " "))
+	}
 }

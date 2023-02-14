@@ -22,7 +22,7 @@ func main() {
 	ctx.FatalIfErrorf(err)
 
 	if cli.Optimize > 0 {
-		code = Optimize(code)
+		code = Optimize(code, cli.Verbose)
 	}
 
 	assembly, err := Assembly(code, cli.File, cli.StackSize)

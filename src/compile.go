@@ -27,6 +27,9 @@ func CompileAndLink(assembly, exeFile string, keepAssemblyFile, verbose bool) er
 	if err != nil {
 		return err
 	}
+	if verbose {
+		fmt.Println("Assembly written to", fs.Name())
+	}
 	fs.Close()
 
 	cmd := exec.Command("gcc", "-o", exeFile, fs.Name())
