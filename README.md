@@ -4,8 +4,8 @@ This repository hosts a [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) com
 
 ## Usage
 
-Run `make` to compile the compiler itself. You can then compile a Brainfuck source file by invoking `./bf <FILE>`. Several command-line options exist, which can be viewed with `./bf --help`.
+Run `make` to compile the compiler itself. You can then compile a Brainfuck source file by invoking `bf <FILE>`. Several command-line options exist, which can be viewed with `bf --help`.
 
 ## Run tests
 
-With `make check`, a suite of test programs will be compiled and run.
+With `make check`, a suite of test programs will be compiled and run. Most of the tests are taken from [Wikipedia](https://en.wikipedia.org/wiki/Brainfuck), while [one test](test/pi.bf) has been created by [Felix Nawothnig](mailto:felix.nawothnig@t-online.de).
