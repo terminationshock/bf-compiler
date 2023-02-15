@@ -4,7 +4,9 @@ This repository hosts a [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) com
 
 ## Usage
 
-Run `make` to compile the compiler itself. You can then compile a Brainfuck source file by invoking `bf <FILE>`. Several command-line options exist, which can be viewed with `bf --help`.
+Run `make` to compile the compiler itself. Alternatively, download the binary of the latest release from [here](https://github.com/terminationshock/bf-compiler/releases/latest).
+
+You can then compile a Brainfuck source file by invoking `bf <FILE>`. Several command-line options exist, which can be viewed with `bf --help`.
 
 ## Run tests
 
