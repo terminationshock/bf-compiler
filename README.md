@@ -9,7 +9,3 @@ Run `make` to compile the compiler itself. You can then compile a Brainfuck sour
 ## Run tests
 
 With `make check`, a suite of test programs will be compiled and run.
-
-## License
-
-[GPL v3](https://www.gnu.org/licenses/gpl-3.0)
