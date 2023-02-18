@@ -128,7 +128,11 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 						program += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.Offset) + br
 					}
 				}
-				program += "movq $0, (%r12)" + br
+				if c.Offset != 0 {
+					program += fmt.Sprintf("movq $0, %d(%%r12)", -8 * c.Offset) + br
+				} else {
+					program += "movq $0, (%r12)" + br
+				}
 			}
 			break
 		}

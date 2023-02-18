@@ -107,7 +107,7 @@ func optimizePointerMovement(commands []*Command, verbose bool) []*Command {
 	i := 0
 	block := []*Command{}
 	for i < len(commands) {
-		if strings.Contains("><+-,.", commands[i].String) && i < len(commands) - 1 {
+		if (strings.Contains("><+-,.", commands[i].String) || commands[i].String == "[-]") && i < len(commands) - 1 {
 			block = append(block, commands[i])
 		} else {
 			if len(block) > 0 {
@@ -216,6 +216,7 @@ func getRemoteCommands(commands []*Command) []*Command {
 				Offset: pointer,
 				Row: c.Row,
 				Col: c.Col,
+				MultiplyLoop: c.MultiplyLoop,
 			})
 		}
 	}
