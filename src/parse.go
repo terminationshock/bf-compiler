@@ -8,13 +8,14 @@ import (
 type Command struct {
 	String string
 	Count int
+	Offset int
 	Row int
 	Col int
 	MultiplyLoop []*Multiply
 }
 
 type Multiply struct {
-	CopyTo int
+	Offset int
 	Factor int
 }
 
@@ -30,13 +31,13 @@ func Parse(file string) ([]*Command, error) {
 	for _, char := range content {
 		str := string(char)
 		if strings.Contains("><+-.,[]", str) {
-			command := &Command {
+			code = append(code, &Command {
 				String: str,
 				Count: 1,
+				Offset: 0,
 				Row: row,
 				Col: col,
-			}
-			code = append(code, command)
+			})
 		}
 		if char == '\n' {
 			row++

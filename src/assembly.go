@@ -56,18 +56,34 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 			program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
 			break
 		case "+":
-			program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
+			if c.Offset != 0 {
+				program += fmt.Sprintf("addq $%d, %d(%%r12)", c.Count, -8 * c.Offset) + br
+			} else {
+				program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
+			}
 			break
 		case "-":
-			program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
+			if c.Offset != 0 {
+				program += fmt.Sprintf("subq $%d, %d(%%r12)", c.Count, -8 * c.Offset) + br
+			} else {
+				program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
+			}
 			break
 		case ".":
-			program += "movq (%r12), %rdi" + br
+			if c.Offset != 0 {
+				program += fmt.Sprintf("movq %d(%%r12), %%rdi", -8 * c.Offset) + br
+			} else {
+				program += "movq (%r12), %rdi" + br
+			}
 			program += "call putchar" + br
 			break
 		case ",":
 			program += "call getchar" + br
-			program += "movq %rax, (%r12)" + br
+			if c.Offset != 0 {
+				program += fmt.Sprintf("movq %%rax, %d(%%r12)", -8 * c.Offset) + br
+			} else {
+				program += "movq %rax, (%r12)" + br
+			}
 			break
 		case "[":
 			loopId++
@@ -107,9 +123,9 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 						program += "movq (%r12), %rax" + br
 					}
 					if m.Factor > 0 {
-						program += fmt.Sprintf("addq %%rax, %d(%%r12)", -8 * m.CopyTo) + br
+						program += fmt.Sprintf("addq %%rax, %d(%%r12)", -8 * m.Offset) + br
 					} else {
-						program += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.CopyTo) + br
+						program += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.Offset) + br
 					}
 				}
 				program += "movq $0, (%r12)" + br

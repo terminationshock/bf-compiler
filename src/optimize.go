@@ -14,6 +14,7 @@ func Optimize(commands []*Command, verbose bool) []*Command {
 	optimized = optimizeDuplicatedCommands(optimized, "><+-", verbose)
 	optimized = optimizeMultiplyLoops(optimized, verbose)
 	optimized = optimizeDuplicatedCommands(optimized, "]", verbose)
+	optimized = optimizePointerMovement(optimized, verbose)
 
 	return optimized
 }
@@ -89,8 +90,8 @@ func optimizeMultiplyLoops(commands []*Command, verbose bool) []*Command {
 				if isMultiplyLoop(currentLoop) {
 					cnt = currentLoopBegin
 					optimized = optimized[:cnt+1]
-					optimized[cnt].String = getLoopPattern(currentLoop)
-					optimized[cnt].MultiplyLoop = newMultiplyLoop(currentLoop)
+					optimized[cnt].String = getBlockPattern(currentLoop)
+					optimized[cnt].MultiplyLoop = getMultiplyLoop(currentLoop)
 					report(verbose, currentLoop[0], "Optimizing loop", optimized[cnt].String)
 				}
 				currentLoop = []*Command{}
@@ -101,7 +102,41 @@ func optimizeMultiplyLoops(commands []*Command, verbose bool) []*Command {
 	return optimized
 }
 
-func getLoopPattern(commands []*Command) string {
+func optimizePointerMovement(commands []*Command, verbose bool) []*Command {
+	optimized := []*Command{}
+	i := 0
+	block := []*Command{}
+	for i < len(commands) {
+		if strings.Contains("><+-,.", commands[i].String) && i < len(commands) - 1 {
+			block = append(block, commands[i])
+		} else {
+			if len(block) > 0 {
+				if isUnoptimizedPointerMovement(block) {
+					report(verbose, block[0], "Optimizing pointer movement", getBlockPattern(block))
+					optimized = append(optimized, getRemoteCommands(block)...)
+					pointer, str := getNetPointerMovement(block)
+					if pointer != 0 {
+						optimized = append(optimized, &Command {
+							String: str,
+							Count: pointer,
+							Offset: 0,
+							Row: block[0].Row,
+							Col: block[0].Col,
+						})
+					}
+				} else {
+					optimized = append(optimized, block...)
+				}
+			}
+			block = []*Command{}
+			optimized = append(optimized, commands[i])
+		}
+		i++
+	}
+	return optimized
+}
+
+func getBlockPattern(commands []*Command) string {
 	pattern := ""
 	for _, c := range commands {
 		pattern += getPattern(c)
@@ -139,7 +174,55 @@ func isMultiplyLoop(commands []*Command) bool {
 	return found && pointer == 0
 }
 
-func newMultiplyLoop(commands []*Command) []*Multiply {
+func isUnoptimizedPointerMovement(commands []*Command) bool {
+	numMove := 0
+	for _, c := range commands {
+		if c.String == ">" || c.String == "<" {
+			numMove++
+		}
+	}
+	return numMove > 1
+}
+
+func getNetPointerMovement(commands []*Command) (int, string) {
+	pointer := 0
+	for _, c := range commands {
+		if c.String == ">" {
+			pointer += c.Count
+		} else if c.String == "<" {
+			pointer -= c.Count
+		}
+	}
+	if pointer > 0 {
+		return pointer, ">"
+	} else if pointer < 0 {
+		return -pointer, "<"
+	}
+	return 0, ""
+}
+
+func getRemoteCommands(commands []*Command) []*Command {
+	remote := []*Command{}
+	pointer := 0
+	for _, c := range commands {
+		if c.String == "<" {
+			pointer -= c.Count
+		} else if c.String == ">" {
+			pointer += c.Count
+		} else {
+			remote = append(remote, &Command {
+				String: c.String,
+				Count: c.Count,
+				Offset: pointer,
+				Row: c.Row,
+				Col: c.Col,
+			})
+		}
+	}
+	return remote
+}
+
+func getMultiplyLoop(commands []*Command) []*Multiply {
 	m := []*Multiply{}
 
 	pointer := 0
@@ -153,14 +236,14 @@ func newMultiplyLoop(commands []*Command) []*Multiply {
 			break
 		case "+":
 			m = append(m, &Multiply{
-				CopyTo: pointer,
+				Offset: pointer,
 				Factor: c.Count,
 			})
 			break
 		case "-":
 			if pointer != 0 {
 				m = append(m, &Multiply{
-					CopyTo: pointer,
+					Offset: pointer,
 					Factor: -c.Count,
 				})
 			}
