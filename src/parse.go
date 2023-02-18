@@ -28,10 +28,10 @@ func Parse(file string) ([]*Command, error) {
 	col := 1
 	code := []*Command{}
 	for _, char := range content {
-		r := rune(char)
-		if strings.ContainsRune("><+-.,[]", r) {
+		str := string(char)
+		if strings.Contains("><+-.,[]", str) {
 			command := &Command {
-				String: string(char),
+				String: str,
 				Count: 1,
 				Row: row,
 				Col: col,

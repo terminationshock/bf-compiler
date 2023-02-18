@@ -1,6 +1,6 @@
 # Brainfuck Compiler
 
-This repository hosts a [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) compiler for Linux x86-64 systems written in Go. It translates the source file to GNU highly-optimized assembly code and compiles it using GCC.
+This repository hosts a [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) compiler for Linux x86-64 systems written in Go. It translates the source file to highly-optimized GNU assembly code and compiles it using GCC.
 
 ## Usage
 
