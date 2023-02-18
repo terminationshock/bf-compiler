@@ -125,18 +125,23 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 			break
 		default:
 			if c.MultiplyLoop != nil {
+				prevFactor := 0
 				for _, m := range c.MultiplyLoop {
-					if m.Factor > 1 || m.Factor < -1 {
-						program += fmt.Sprintf("imulq $%d, (%%r12), %%rax", abs(m.Factor)) + br
-					} else {
-						program += "movq (%r12), %rax" + br
+					if m.Factor != prevFactor {
+						if m.Factor > 1 || m.Factor < -1 {
+							program += fmt.Sprintf("imulq $%d, (%%r12), %%rax", abs(m.Factor)) + br
+						} else {
+							program += "movq (%r12), %rax" + br
+						}
+						inst++
 					}
+					prevFactor = m.Factor
 					if m.Factor > 0 {
 						program += fmt.Sprintf("addq %%rax, %d(%%r12)", -8 * m.Offset) + br
 					} else {
 						program += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.Offset) + br
 					}
-					inst += 2
+					inst++
 				}
 				if c.Offset != 0 {
 					program += fmt.Sprintf("movq $0, %d(%%r12)", -8 * c.Offset) + br
@@ -154,7 +159,9 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 		return "", errors.New(fmt.Sprintf("No matching loop end at %s:%d:%d", file, loops[n].Row, loops[n].Col))
 	}
 
-	fmt.Printf("%d instructions created\n", inst)
+	if verbose {
+		fmt.Printf("%d instructions, %d loops\n", inst, loopId + 1)
+	}
 
 	if stackSize % 2 > 0 {
 		stackSize++
