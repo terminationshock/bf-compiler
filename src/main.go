@@ -25,7 +25,7 @@ func main() {
 		code = Optimize(code, cli.Verbose)
 	}
 
-	assembly, err := Assembly(code, cli.File, cli.StackSize)
+	assembly, err := Assembly(code, cli.File, cli.StackSize, cli.Verbose)
 	ctx.FatalIfErrorf(err)
 
 	err = CompileAndLink(assembly, cli.Output, cli.Assembly, cli.Verbose)

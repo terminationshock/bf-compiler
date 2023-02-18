@@ -36,7 +36,7 @@ type Loop struct {
 	Col int
 }
 
-func Assembly(code []*Command, file string, stackSize int) (string, error) {
+func Assembly(code []*Command, file string, stackSize int, verbose bool) (string, error) {
 	if stackSize < 1 {
 		return "", errors.New("Invalid stack size")
 	}
@@ -45,15 +45,18 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 	loops := []*Loop{}
 
 	program := ""
+	inst := 13
 
 	for _, c := range code {
 		program += fmt.Sprintf("# %s at (%d,%d)", strings.Repeat(c.String, c.Count), c.Row, c.Col) + br
 		switch c.String {
 		case ">":
 			program += fmt.Sprintf("subq $%d, %%r12", 8 * c.Count) + br
+			inst++
 			break
 		case "<":
 			program += fmt.Sprintf("addq $%d, %%r12", 8 * c.Count) + br
+			inst++
 			break
 		case "+":
 			if c.Offset != 0 {
@@ -61,6 +64,7 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 			} else {
 				program += fmt.Sprintf("addq $%d, (%%r12)", c.Count) + br
 			}
+			inst++
 			break
 		case "-":
 			if c.Offset != 0 {
@@ -68,6 +72,7 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 			} else {
 				program += fmt.Sprintf("subq $%d, (%%r12)", c.Count) + br
 			}
+			inst++
 			break
 		case ".":
 			if c.Offset != 0 {
@@ -76,6 +81,7 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 				program += "movq (%r12), %rdi" + br
 			}
 			program += "call putchar" + br
+			inst += 2
 			break
 		case ",":
 			program += "call getchar" + br
@@ -84,6 +90,7 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 			} else {
 				program += "movq %rax, (%r12)" + br
 			}
+			inst += 2
 			break
 		case "[":
 			loopId++
@@ -95,6 +102,7 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 			program += fmt.Sprintf(".loop%d:", loopId) + br
 			program += "cmpq $0, (%r12)" + br
 			program += "je " + fmt.Sprintf(".break%d", loopId) + br
+			inst += 2
 			break
 		case "]":
 			n := len(loops) - 1
@@ -113,6 +121,7 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 				program = strings.Replace(program, fmt.Sprintf(".break%d", loops[n].Number), mergedBreak, -1)
 			}
 			loops = loops[:n]
+			inst++
 			break
 		default:
 			if c.MultiplyLoop != nil {
@@ -127,12 +136,14 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 					} else {
 						program += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.Offset) + br
 					}
+					inst += 2
 				}
 				if c.Offset != 0 {
 					program += fmt.Sprintf("movq $0, %d(%%r12)", -8 * c.Offset) + br
 				} else {
 					program += "movq $0, (%r12)" + br
 				}
+				inst++
 			}
 			break
 		}
@@ -142,6 +153,8 @@ func Assembly(code []*Command, file string, stackSize int) (string, error) {
 		n := len(loops) - 1
 		return "", errors.New(fmt.Sprintf("No matching loop end at %s:%d:%d", file, loops[n].Row, loops[n].Col))
 	}
+
+	fmt.Printf("%d instructions created\n", inst)
 
 	if stackSize % 2 > 0 {
 		stackSize++
