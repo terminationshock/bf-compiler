@@ -118,7 +118,7 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 				if n < 0 {
 					return "", errors.New(fmt.Sprintf("No matching loop begin at %s:%d:%d", file, c.Row, c.Col))
 				}
-				program = strings.Replace(program, fmt.Sprintf(".break%d", loops[n].Number), mergedBreak, -1)
+				program = strings.Replace(program, fmt.Sprintf(".break%d\n", loops[n].Number), mergedBreak + "\n", -1)
 			}
 			loops = loops[:n]
 			inst++
