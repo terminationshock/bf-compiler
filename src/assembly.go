@@ -125,24 +125,9 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 			break
 		default:
 			if c.MultiplyLoop != nil {
-				prevFactor := 0
-				for _, m := range c.MultiplyLoop {
-					if m.Factor != prevFactor {
-						if m.Factor > 1 || m.Factor < -1 {
-							program += fmt.Sprintf("imulq $%d, (%%r12), %%rax", abs(m.Factor)) + br
-						} else {
-							program += "movq (%r12), %rax" + br
-						}
-						inst++
-					}
-					prevFactor = m.Factor
-					if m.Factor > 0 {
-						program += fmt.Sprintf("addq %%rax, %d(%%r12)", -8 * m.Offset) + br
-					} else {
-						program += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.Offset) + br
-					}
-					inst++
-				}
+				programM, instM := processMultiplyLoop(c.MultiplyLoop)
+				program += programM
+				inst += instM
 				if c.Offset != 0 {
 					program += fmt.Sprintf("movq $0, %d(%%r12)", -8 * c.Offset) + br
 				} else {
@@ -168,6 +153,32 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 	}
 
 	return fmt.Sprintf(template, stackSize, program), nil
+}
+
+func processMultiplyLoop(multiplyLoop []*Multiply) (string, int) {
+	code := ""
+	inst := 0
+
+	prevFactor := 0
+	for _, m := range multiplyLoop {
+		if m.Factor != prevFactor {
+			if m.Factor > 1 || m.Factor < -1 {
+				code += fmt.Sprintf("imulq $%d, (%%r12), %%rax", abs(m.Factor)) + br
+			} else {
+				code += "movq (%r12), %rax" + br
+			}
+			inst++
+		}
+		prevFactor = m.Factor
+		if m.Factor > 0 {
+			code += fmt.Sprintf("addq %%rax, %d(%%r12)", -8 * m.Offset) + br
+		} else {
+			code += fmt.Sprintf("subq %%rax, %d(%%r12)", -8 * m.Offset) + br
+		}
+		inst++
+	}
+
+	return code, inst
 }
 
 func abs(val int) int {
