@@ -14,6 +14,7 @@ func Optimize(commands []*Command, verbose bool) []*Command {
 	optimized = optimizeDuplicatedCommands(optimized, "><+-", verbose)
 	optimized = optimizeMultiplyLoops(optimized, verbose)
 	optimized = optimizeDuplicatedCommands(optimized, "]", verbose)
+	optimized = optimizeUselessValueChanges(optimized, verbose)
 	optimized = optimizePointerMovement(optimized, verbose)
 
 	return optimized
@@ -106,6 +107,27 @@ func optimizeMultiplyLoops(commands []*Command, verbose bool) []*Command {
 	return optimized
 }
 
+func optimizeUselessValueChanges(commands []*Command, verbose bool) []*Command {
+	optimized := []*Command{}
+	i := 0
+	block := []*Command{}
+	for i < len(commands) {
+		if strings.Contains("+-", commands[i].String) && i < len(commands) - 1 {
+			block = append(block, commands[i])
+		} else {
+			if len(block) > 0 && (commands[i].String == "," || commands[i].String == "[-]") {
+				report(verbose, block[0], "Skipping overwritten value", getBlockPattern(block))
+				block = []*Command{}
+			}
+			optimized = append(optimized, block...)
+			optimized = append(optimized, commands[i])
+			block = []*Command{}
+		}
+		i++
+	}
+	return optimized
+}
+
 func optimizePointerMovement(commands []*Command, verbose bool) []*Command {
 	optimized := []*Command{}
 	i := 0
@@ -114,26 +136,24 @@ func optimizePointerMovement(commands []*Command, verbose bool) []*Command {
 		if (strings.Contains("><+-,.", commands[i].String) || commands[i].String == "[-]") && i < len(commands) - 1 {
 			block = append(block, commands[i])
 		} else {
-			if len(block) > 0 {
-				if isUnoptimizedPointerMovement(block) {
-					report(verbose, block[0], "Optimizing pointer movement", getBlockPattern(block))
-					optimized = append(optimized, getRemoteCommands(block)...)
-					pointer, str := getNetPointerMovement(block)
-					if pointer != 0 {
-						optimized = append(optimized, &Command {
-							String: str,
-							Count: pointer,
-							Offset: 0,
-							Row: block[0].Row,
-							Col: block[0].Col,
-						})
-					}
-				} else {
-					optimized = append(optimized, block...)
+			if len(block) > 0 && isUnoptimizedPointerMovement(block) {
+				report(verbose, block[0], "Optimizing pointer movement", getBlockPattern(block))
+				optimized = append(optimized, getRemoteCommands(block)...)
+				pointer, str := getNetPointerMovement(block)
+				if pointer != 0 {
+					optimized = append(optimized, &Command {
+						String: str,
+						Count: pointer,
+						Offset: 0,
+						Row: block[0].Row,
+						Col: block[0].Col,
+					})
 				}
+				block = []*Command{}
 			}
-			block = []*Command{}
+			optimized = append(optimized, block...)
 			optimized = append(optimized, commands[i])
+			block = []*Command{}
 		}
 		i++
 	}

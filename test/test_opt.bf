@@ -10,7 +10,7 @@
 [>>->+<+++<<-]  multiply loop
 +
 [->-<]          multiply loop
-++++
+++++            skip useless increments
 [-]             set zero
 +
 [+[+[+]]]       merge loop ends

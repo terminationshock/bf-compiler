@@ -43,8 +43,6 @@ main:
   movq (%r12), %rax
   subq %rax, -8(%r12)
   movq $0, (%r12)
-  # ++++ at (13,1)
-  addq $4, (%r12)
   # [-] at (14,1)
   movq $0, (%r12)
   # + at (15,1)
