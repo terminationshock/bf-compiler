@@ -281,6 +281,9 @@ func getMultiplyLoop(commands []*Command) []*Multiply {
 func report(verbose bool, command *Command, message ...string) {
 	if verbose {
 		pos := ""
+		if command.Row < 100 {
+			pos += " "
+		}
 		if command.Row < 10 {
 			pos += " "
 		}
