@@ -5,13 +5,11 @@ main:
   movq %rsp, %rbp
   movq %rsp, %r12
   subq $8, %r12
+  subq $240000, %rsp
   xorq %rax, %rax
-  movq $30000, %r13
-  .loop0:
-  pushq %rax
-  subq $1, %r13
-  testq %r13, %r13
-  jne .loop0
+  movq $30000, %rcx
+  leaq (%rsp), %rdi
+  rep stosq
   # > at (5,1)
   subq $8, %r12
   # + at (5,2)
@@ -509,9 +507,9 @@ main:
   subq $1, 8(%r12)
   # [-<+<->>] at (34,28)
   movq (%r12), %rax
-  addq %rax, 8(%r12)
-  movq (%r12), %rax
   subq %rax, 16(%r12)
+  movq (%r12), %rax
+  addq %rax, 8(%r12)
   movq $0, (%r12)
   # ]]]]]]]]] at (34,37)
   jmp .loop30
@@ -537,11 +535,11 @@ main:
   addq $8, %r12
   # [>+<<<+++++++++<->>>-] at (35,11)
   movq (%r12), %rax
+  subq %rax, 24(%r12)
+  movq (%r12), %rax
   addq %rax, -8(%r12)
   imulq $9, (%r12), %rax
   addq %rax, 16(%r12)
-  movq (%r12), %rax
-  subq %rax, 24(%r12)
   movq $0, (%r12)
   # <<<<< at (35,33)
   addq $40, %r12

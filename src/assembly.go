@@ -15,13 +15,11 @@ main:
   movq %%rsp, %%rbp
   movq %%rsp, %%r12
   subq $8, %%r12
+  subq $%d, %%rsp
   xorq %%rax, %%rax
-  movq $%d, %%r13
-  .loop0:
-  pushq %%rax
-  subq $1, %%r13
-  testq %%r13, %%r13
-  jne .loop0
+  movq $%d, %%rcx
+  leaq (%%rsp), %%rdi
+  rep stosq
   %sxorq %%rax, %%rax
   movq %%rbp, %%rsp
   popq %%rbp
@@ -46,7 +44,7 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 	loops := []*Loop{}
 
 	program := ""
-	inst := 13
+	inst := 12
 
 	for _, c := range code {
 		program += fmt.Sprintf("# %s at (%d,%d)", strings.Repeat(c.String, c.Count), c.Row, c.Col) + br
@@ -153,7 +151,7 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 		stackSize++
 	}
 
-	return fmt.Sprintf(template, stackSize, program), nil
+	return fmt.Sprintf(template, 8 * stackSize, stackSize, program), nil
 }
 
 func processMultiplyLoop(multiplyLoop []*Multiply) (string, int) {

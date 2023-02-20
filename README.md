@@ -20,4 +20,4 @@ The following test case has been used for benchmarking the compiler: `factor.b` 
 | -------- | ------- |
 | [ebfc (commit e7fba94)](https://github.com/BR903/ELFkickers/tree/e7fba942df51e756897224cff5aa853de8fafd90/ebfc) | 23 seconds |
 | [bfc (version 1.7.0)](https://bfc.wilfred.me.uk/) | 8.5 seconds |
-| this repository | 7.1 seconds |
+| this repository | 7 seconds |

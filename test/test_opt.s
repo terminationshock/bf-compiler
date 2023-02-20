@@ -5,13 +5,11 @@ main:
   movq %rsp, %rbp
   movq %rsp, %r12
   subq $8, %r12
+  subq $240000, %rsp
   xorq %rax, %rax
-  movq $30000, %r13
-  .loop0:
-  pushq %rax
-  subq $1, %r13
-  testq %r13, %r13
-  jne .loop0
+  movq $30000, %rcx
+  leaq (%rsp), %rdi
+  rep stosq
   # > at (2,1)
   subq $8, %r12
   # ++++ at (4,1)
