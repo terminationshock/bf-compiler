@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -158,6 +159,10 @@ func Assembly(code []*Command, file string, stackSize int, verbose bool) (string
 func processMultiplyLoop(multiplyLoop []*Multiply) (string, int) {
 	code := ""
 	inst := 0
+
+	sort.Slice(multiplyLoop, func(i, j int) bool {
+		return multiplyLoop[i].Factor < multiplyLoop[j].Factor
+	})
 
 	prevFactor := 0
 	for _, m := range multiplyLoop {
