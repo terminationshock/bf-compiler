@@ -36,6 +36,10 @@ func optimizeUselessLoops(commands []*Command, verbose bool) []*Command {
 			skippedLoop = 1
 			report(verbose, commands[i], "Skipping unreachable loop")
 			i++
+		} else if i > 0 && commands[i-1].String == "]" && commands[i].String == "[" {
+			skippedLoop = 1
+			report(verbose, commands[i], "Skipping unreachable loop")
+			i++
 		} else if i < len(commands) - 1 && commands[i].String == "[" && commands[i+1].String == "]" {
 			report(verbose, commands[i], "Skipping empty loop []")
 			i += 2
