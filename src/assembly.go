@@ -19,7 +19,7 @@ main:
   .loop0:
   pushq %%rax
   subq $1, %%r13
-  cmpq $0, %%r13
+  testq %%r13, %%r13
   jne .loop0
   %sxorq %%rax, %%rax
   movq %%rbp, %%rsp
