@@ -17,7 +17,7 @@ clean:
 TEST_FILES=hello_world add rot13 pi
 TESTS=$(patsubst %, test/%, $(TEST_FILES))
 
-check: $(EXE) $(TESTS)
+check: $(EXE) $(TESTS) test/test_opt
 
 test/%: test/%.0.x test/%.1.x
 	test ! -f $@.in || ./$< < $@.in > OUT.0
@@ -26,6 +26,10 @@ test/%: test/%.0.x test/%.1.x
 	test ! -f $@.in || ./$(word 2,$^) < $@.in > OUT.1
 	test -f $@.in || ./$(word 2,$^) > OUT.1
 	diff -q $@.out OUT.1
+
+test/test_opt: test/test_opt.bf
+	./$(EXE) -S -O1 $<
+	diff -q -I "[ ]*#.*" $@.s a.out.s
 
 test/%.0.x: test/%.bf
 	./$(EXE) -o $@ -O0 $<
