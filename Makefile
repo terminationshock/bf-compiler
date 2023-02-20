@@ -13,6 +13,8 @@ clean:
 	rm -f *.x
 	rm -f *.s
 	rm -f OUT.*
+	rm -f test/*.x
+	rm -f test/*.x.s
 
 TEST_FILES=hello_world add rot13 pi
 TESTS=$(patsubst %, test/%, $(TEST_FILES))
@@ -26,13 +28,14 @@ test/%: test/%.0.x test/%.1.x
 	test ! -f $@.in || ./$(word 2,$^) < $@.in > OUT.1
 	test -f $@.in || ./$(word 2,$^) > OUT.1
 	diff -q $@.out OUT.1
+	test ! -f $@.s || diff -q $@.s $(word 2,$^).s
 
 test/test_opt: test/test_opt.bf
 	./$(EXE) -S -O1 $<
-	diff -q -I "[ ]*#.*" $@.s a.out.s
+	diff -q $@.s a.out.s
 
 test/%.0.x: test/%.bf
 	./$(EXE) -o $@ -O0 $<
 
 test/%.1.x: test/%.bf
-	./$(EXE) -o $@ -O1 $<
+	./$(EXE) -o $@ -O1 -S $<
